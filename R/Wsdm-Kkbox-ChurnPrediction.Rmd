@@ -1,0 +1,152 @@
+---
+title: "WSDM KKBox - Churn Prediction"
+author: "Manu Mathew"
+date: "6 August 2019"
+output:
+  html_document:
+    toc: true
+    number_sections: true
+    toc_float:
+      collapsed: false
+      smooth_scroll: false
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+Install_And_Load <- function(packages) {
+    k <- packages[!(packages %in% installed.packages()[,"Package"])];
+    if(length(k))
+    {install.packages(k, repos='https://cran.rstudio.com/');}
+    
+    for(package_name in packages)
+    {suppressMessages(library(package_name,character.only=TRUE, quietly = TRUE));}
+}
+
+
+Install_And_Load(c("RevoScaleR", "dplyr", "stringr",
+                   "lubridate"))
+
+rxOptions(reportProgress = 3) # reduces the amount of output RevoScaleR produces
+options(dplyr.print_max = 200)
+options(dplyr.width = Inf) # shows all columns of a tbl_df object
+
+directory <-  "E:/Documents/PersonalProjects/WsdmKKBox-ChurnPrediction/"
+
+```
+
+# Data Ingestion 
+
+Using Machine Learning Server (also known as Microsft R Server) we read in the following files - transactions, members, train and user log data. These files are saved as .xdf file on the disk and not as dataframe since they are huge. 
+
+Few data manipulations were done on the fly
+- Converting some columns to factor
+- Converting character to date type
+
+```{r eval=FALSE, include=FALSE}
+
+# transactions.csv ####
+csvPath <- paste0(directory, "Data/Base/transactions.csv") 
+xdfPath <- paste0(directory, "Data/Processed/Xdf/transactions.xdf")
+
+rxImport(inData = csvPath,
+         outFile = xdfPath,
+         colClasses = c(payment_method_id = 'factor',
+                        is_auto_renew = 'factor',
+                        is_cancel = 'factor'),
+         transforms = list(transaction_date = as.Date(as.character(transaction_date), format="%Y%m%d"),
+                           membership_expire_date = as.Date(as.character(membership_expire_date), format="%Y%m%d")),
+         overwrite = TRUE,
+         rowsPerRead = 5000000,
+         reportProgress = 3)
+
+transactionsXdf <- RxXdfData(xdfPath)
+# rxGetInfo(transactionsXdf, getVarInfo = TRUE, numRows = 10)
+
+
+# members data ####
+
+csvPath <- paste0(directory, "Data/Base/members_v3.csv")
+xdfPath <- paste0(directory, "Data/Processed/Xdf/members.xdf")
+
+rxImport(inData = csvPath,
+         outFile = xdfPath,
+         colClasses = c(city = 'factor',
+                        gender = 'factor',
+                        registered_via = 'factor'),
+         transforms = list(registration_init_time = as.Date(as.character(registration_init_time), format="%Y%m%d")),
+         overwrite = TRUE, 
+         reportProgress = 3)
+
+membersXdf <- RxXdfData(xdfPath)
+# rxGetInfo(membersXdf, getVarInfo = TRUE, numRows = 10)
+# rxSummary(~city, membersXdf)
+# rxSummary(~registered_via, membersXdf)
+
+rxFactors(inData = membersXdf, outFile = membersXdf,
+          factorInfo = list(city = list(varName = "city",
+                                        # levels = 1:21, 
+                                        otherLevel = NULL,
+                                        sortLevels = TRUE),
+                            registered_via = list(varName = "registered_via",
+                                                  # levels = 1:19, 
+                                                  otherLevel = NULL,
+                                                  sortLevels = TRUE)),
+          # sortLevels = TRUE,
+          overwrite = TRUE)
+
+# rxGetInfo(membersXdf, getVarInfo = TRUE, numRows = 10)
+
+
+# user logs data ####
+
+csvPath <- paste0(directory, "Data/Base/user_logs.csv")
+xdfPath <- paste0(directory, "Data/Processed/Xdf/userLogs.xdf")
+
+rxImport(inData = csvPath,
+         outFile = xdfPath,
+         # colClasses = c(city = 'factor',
+         #                gender = 'factor',
+         #                registered_via = 'factor'),
+         transforms = list(date = as.Date(as.character(date), format="%Y%m%d")),
+         overwrite = TRUE)
+
+userLogsXdf <- RxXdfData(xdfPath)
+# rxGetInfo(userLogsXdf, getVarInfo = TRUE, numRows = 10)
+
+
+# train data ####
+
+csvPath <- paste0(directory, "Data/Base/train_v2.csv")
+xdfPath <- paste0(directory, "Data/Processed/Xdf/train.xdf")
+rxImport(inData = csvPath,
+         outFile = xdfPath,
+         colClasses = c(is_churn = 'factor'),
+         overwrite = TRUE, 
+         reportProgress = 3)
+
+trainXdf <- RxXdfData(xdfPath)
+# rxGetInfo(trainXdf, getVarInfo = TRUE, numRows = 10)
+
+```
+
+
+Lets have a glimpse of these datasets
+
+```{r}
+# transactions ####
+rxGetInfo(transactionsXdf, getVarInfo = TRUE, numRows = 5)
+
+# members ####
+rxGetInfo(membersXdf, getVarInfo = TRUE, numRows = 5)
+
+# user log ####
+rxGetInfo(userLogsXdf, getVarInfo = TRUE, numRows = 5)
+
+# train ####
+rxGetInfo(trainXdf, getVarInfo = TRUE, numRows = 5)
+
+```
+
+
