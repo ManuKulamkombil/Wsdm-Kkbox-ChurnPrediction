@@ -12,7 +12,9 @@ output:
     code_folding: hide
 ---
 
-```{r setup, include=FALSE}
+# Install and Load Packages
+
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 
 Install_And_Load <- function(packages) {
@@ -26,7 +28,7 @@ Install_And_Load <- function(packages) {
 
 
 Install_And_Load(c("RevoScaleR", "dplyr", "stringr",
-                   "lubridate"))
+                   "lubridate", "plotly"))
 
 
 rxOptions(reportProgress = 3) # reduces the amount of output RevoScaleR produces
@@ -162,4 +164,56 @@ rxGetInfo(trainXdf, getVarInfo = TRUE, numRows = 5)
 
 ```
 
+
+# EDA
+
+## Churning Members' Profile (Members data & train data)
+
+We shall merge members data and train data (labelled data).
+
+```{reval=FALSE, include=TRUE}
+churnMembersXdf <- paste0(directory, "Data/Processed/Xdf/churnMembers.xdf")
+
+rxMerge(inData1 = membersXdf,
+        inData2 = trainXdf,
+        outFile = churnMembersXdf,
+        matchVars = "msno",
+        type = "inner")
+```
+
+Lets have a glimpse of it,
+
+```{r}
+churnMembersXdf <- paste0(directory, "Data/Processed/Xdf/churnMembers.xdf")
+
+rxGetInfo(churnMembersXdf, getVarInfo = TRUE, numRows = 5)
+
+rxSummary(~gender, 
+          data = churnMembersXdf)
+
+```
+
+
+### Gender
+
+```{r}
+
+
+genderChurn <- rxCube(formula = ~ gender + is_churn,
+                    data = churnMembersXdf,
+                    returnDataFrame = TRUE)
+summary(genderChurn)
+print(genderChurn)
+
+plotly::plot_ly(genderChurn, 
+        x = ~gender) %>%
+    add_trace(y = ~Counts,
+              color = ~is_churn,
+              # name = 'Absence Rate', 
+              type = 'bar'
+              # mode = 'lines'
+              )
+
+
+```
 
