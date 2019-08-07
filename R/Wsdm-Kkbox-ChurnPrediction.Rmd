@@ -1,7 +1,7 @@
 ---
 title: "WSDM KKBox - Churn Prediction"
 author: "Manu Mathew"
-date: "6 August 2019"
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
   html_document:
     toc: true
@@ -28,11 +28,13 @@ Install_And_Load <- function(packages) {
 Install_And_Load(c("RevoScaleR", "dplyr", "stringr",
                    "lubridate"))
 
+
 rxOptions(reportProgress = 3) # reduces the amount of output RevoScaleR produces
 options(dplyr.print_max = 200)
 options(dplyr.width = Inf) # shows all columns of a tbl_df object
 
 directory <-  "E:/Documents/PersonalProjects/WsdmKKBox-ChurnPrediction/"
+temp2 <- 20
 
 ```
 
@@ -44,7 +46,7 @@ Few data manipulations were done on the fly
 - Converting some columns to factor
 - Converting character to date type
 
-```{r eval=FALSE}
+```{r eval=FALSE, include=TRUE}
 
 # transactions.csv ####
 csvPath <- paste0(directory, "Data/Base/transactions.csv") 
@@ -79,7 +81,7 @@ rxImport(inData = csvPath,
          overwrite = TRUE, 
          reportProgress = 3)
 
-# membersXdf <- RxXdfData(xdfPath)
+membersXdf <- RxXdfData(membersXdf)
 # rxGetInfo(membersXdf, getVarInfo = TRUE, numRows = 10)
 # rxSummary(~city, membersXdf)
 # rxSummary(~registered_via, membersXdf)
@@ -112,24 +114,33 @@ rxImport(inData = csvPath,
          transforms = list(date = as.Date(as.character(date), format="%Y%m%d")),
          overwrite = TRUE)
 
-# userLogsXdf <- RxXdfData(xdfPath)
+userLogsXdf <- RxXdfData(userLogsXdf)
 # rxGetInfo(userLogsXdf, getVarInfo = TRUE, numRows = 10)
 
 
 # train data ####
 
 csvPath <- paste0(directory, "Data/Base/train_v2.csv")
-xdfPath <- paste0(directory, "Data/Processed/Xdf/train.xdf")
+trainXdf <- paste0(directory, "Data/Processed/Xdf/train.xdf")
 rxImport(inData = csvPath,
-         outFile = xdfPath,
+         outFile = trainXdf,
          colClasses = c(is_churn = 'factor'),
          overwrite = TRUE, 
          reportProgress = 3)
 
-trainXdf <<- RxXdfData(xdfPath)
+trainXdf <<- RxXdfData(trainXdf)
 # rxGetInfo(trainXdf, getVarInfo = TRUE, numRows = 10)
 
-temp <- 10
+
+```
+
+
+The above code is set not to run while knitting as it might take some time. So I have to set the paths to xdf objects again.
+```{r}
+transactionsXdf <- RxXdfData(paste0(directory, "Data/Processed/Xdf/transactions.xdf"))
+membersXdf <- RxXdfData(paste0(directory, "Data/Processed/Xdf/members.xdf"))
+userLogsXdf <- RxXdfData(paste0(directory, "Data/Processed/Xdf/userLogs.xdf"))
+trainXdf <- RxXdfData(paste0(directory, "Data/Processed/Xdf/train.xdf"))
 
 ```
 
@@ -137,21 +148,17 @@ temp <- 10
 Lets have a glimpse of these datasets
 
 ```{r}
-
-print(temp)
 # transactions ####
-rxGetInfo(rxXdfFileName(transactionsXdf), getVarInfo = TRUE, numRows = 5)
-# transactionsXdf
+rxGetInfo(transactionsXdf, getVarInfo = TRUE, numRows = 5)
+
 # members ####
-rxGetInfo(rxXdfFileName(membersXdf), getVarInfo = TRUE, numRows = 5)
+rxGetInfo(membersXdf, getVarInfo = TRUE, numRows = 5)
 
 # user log ####
-rxGetInfo(rxXdfFileName(userLogsXdf), getVarInfo = TRUE, numRows = 5)
+rxGetInfo(userLogsXdf, getVarInfo = TRUE, numRows = 5)
 
 # train ####
-# rxGetInfo(paste0(directory, "Data/Processed/Xdf/transactions.xdf"), getVarInfo = TRUE, numRows = 5)
-rxGetInfo(rxXdfFileName(trainXdf), getVarInfo = TRUE, numRows = 5)
-
+rxGetInfo(trainXdf, getVarInfo = TRUE, numRows = 5)
 
 ```
 
