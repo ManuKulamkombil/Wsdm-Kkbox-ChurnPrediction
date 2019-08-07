@@ -44,14 +44,14 @@ Few data manipulations were done on the fly
 - Converting some columns to factor
 - Converting character to date type
 
-```{r eval=FALSE, include=FALSE}
+```{r eval=FALSE}
 
 # transactions.csv ####
 csvPath <- paste0(directory, "Data/Base/transactions.csv") 
-xdfPath <- paste0(directory, "Data/Processed/Xdf/transactions.xdf")
+transactionsXdf <- paste0(directory, "Data/Processed/Xdf/transactions.xdf")
 
 rxImport(inData = csvPath,
-         outFile = xdfPath,
+         outFile = transactionsXdf,
          colClasses = c(payment_method_id = 'factor',
                         is_auto_renew = 'factor',
                         is_cancel = 'factor'),
@@ -61,17 +61,17 @@ rxImport(inData = csvPath,
          rowsPerRead = 5000000,
          reportProgress = 3)
 
-transactionsXdf <- RxXdfData(xdfPath)
+# transactionsXdf <- RxXdfData(xdfPath)
 # rxGetInfo(transactionsXdf, getVarInfo = TRUE, numRows = 10)
 
 
 # members data ####
 
 csvPath <- paste0(directory, "Data/Base/members_v3.csv")
-xdfPath <- paste0(directory, "Data/Processed/Xdf/members.xdf")
+membersXdf <- paste0(directory, "Data/Processed/Xdf/members.xdf")
 
 rxImport(inData = csvPath,
-         outFile = xdfPath,
+         outFile = membersXdf,
          colClasses = c(city = 'factor',
                         gender = 'factor',
                         registered_via = 'factor'),
@@ -79,7 +79,7 @@ rxImport(inData = csvPath,
          overwrite = TRUE, 
          reportProgress = 3)
 
-membersXdf <- RxXdfData(xdfPath)
+# membersXdf <- RxXdfData(xdfPath)
 # rxGetInfo(membersXdf, getVarInfo = TRUE, numRows = 10)
 # rxSummary(~city, membersXdf)
 # rxSummary(~registered_via, membersXdf)
@@ -102,17 +102,17 @@ rxFactors(inData = membersXdf, outFile = membersXdf,
 # user logs data ####
 
 csvPath <- paste0(directory, "Data/Base/user_logs.csv")
-xdfPath <- paste0(directory, "Data/Processed/Xdf/userLogs.xdf")
+userLogsXdf <- paste0(directory, "Data/Processed/Xdf/userLogs.xdf")
 
 rxImport(inData = csvPath,
-         outFile = xdfPath,
+         outFile = userLogsXdf,
          # colClasses = c(city = 'factor',
          #                gender = 'factor',
          #                registered_via = 'factor'),
          transforms = list(date = as.Date(as.character(date), format="%Y%m%d")),
          overwrite = TRUE)
 
-userLogsXdf <- RxXdfData(xdfPath)
+# userLogsXdf <- RxXdfData(xdfPath)
 # rxGetInfo(userLogsXdf, getVarInfo = TRUE, numRows = 10)
 
 
@@ -126,8 +126,10 @@ rxImport(inData = csvPath,
          overwrite = TRUE, 
          reportProgress = 3)
 
-trainXdf <- RxXdfData(xdfPath)
+trainXdf <<- RxXdfData(xdfPath)
 # rxGetInfo(trainXdf, getVarInfo = TRUE, numRows = 10)
+
+temp <- 10
 
 ```
 
@@ -135,17 +137,21 @@ trainXdf <- RxXdfData(xdfPath)
 Lets have a glimpse of these datasets
 
 ```{r}
-# transactions ####
-rxGetInfo(transactionsXdf, getVarInfo = TRUE, numRows = 5)
 
+print(temp)
+# transactions ####
+rxGetInfo(rxXdfFileName(transactionsXdf), getVarInfo = TRUE, numRows = 5)
+# transactionsXdf
 # members ####
-rxGetInfo(membersXdf, getVarInfo = TRUE, numRows = 5)
+rxGetInfo(rxXdfFileName(membersXdf), getVarInfo = TRUE, numRows = 5)
 
 # user log ####
-rxGetInfo(userLogsXdf, getVarInfo = TRUE, numRows = 5)
+rxGetInfo(rxXdfFileName(userLogsXdf), getVarInfo = TRUE, numRows = 5)
 
 # train ####
-rxGetInfo(trainXdf, getVarInfo = TRUE, numRows = 5)
+# rxGetInfo(paste0(directory, "Data/Processed/Xdf/transactions.xdf"), getVarInfo = TRUE, numRows = 5)
+rxGetInfo(rxXdfFileName(trainXdf), getVarInfo = TRUE, numRows = 5)
+
 
 ```
 
