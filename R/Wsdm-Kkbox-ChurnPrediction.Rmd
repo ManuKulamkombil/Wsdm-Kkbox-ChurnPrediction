@@ -12,7 +12,9 @@ output:
     code_folding: hide
 ---
 
-```{r setup, include=FALSE}
+# Install and Load Packages
+
+```{r setup}
 knitr::opts_chunk$set(echo = TRUE)
 
 Install_And_Load <- function(packages) {
@@ -162,4 +164,39 @@ rxGetInfo(trainXdf, getVarInfo = TRUE, numRows = 5)
 
 ```
 
+
+# EDA
+
+## Churning Members' Profile (Members data & train data)
+
+We shall merge members data and train data (labelled data).
+
+```{r}
+churnMembersXdf <- paste0(directory, "Data/Processed/Xdf/churnMembers.xdf")
+
+rxMerge(inData1 = membersXdf,
+        inData2 = trainXdf,
+        outFile = churnMembersXdf,
+        matchVars = "msno",
+        type = "inner")
+```
+
+Lets have a glimpse of it,
+
+```{r}
+churnMembersXdf <- paste0(directory, "Data/Processed/Xdf/churnMembers.xdf")
+
+rxGetInfo(churnMembersXdf, getVarInfo = TRUE, numRows = 5)
+
+```
+
+
+### City
+
+```{r}
+
+cityChurn
+
+
+```
 

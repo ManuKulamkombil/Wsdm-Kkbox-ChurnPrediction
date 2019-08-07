@@ -246,8 +246,34 @@ div.tocify {
 </div>
 
 
+<div id="install-and-load-packages" class="section level1">
+<h1><span class="header-section-number">1</span> Install and Load Packages</h1>
+<pre class="r"><code>knitr::opts_chunk$set(echo = TRUE)
+
+Install_And_Load &lt;- function(packages) {
+    k &lt;- packages[!(packages %in% installed.packages()[,&quot;Package&quot;])];
+    if(length(k))
+    {install.packages(k, repos='https://cran.rstudio.com/');}
+    
+    for(package_name in packages)
+    {suppressMessages(library(package_name,character.only=TRUE, quietly = TRUE));}
+}
+
+
+Install_And_Load(c(&quot;RevoScaleR&quot;, &quot;dplyr&quot;, &quot;stringr&quot;,
+                   &quot;lubridate&quot;))</code></pre>
+<pre><code>## Warning: package 'dplyr' was built under R version 3.4.4</code></pre>
+<pre><code>## Warning: package 'stringr' was built under R version 3.4.4</code></pre>
+<pre><code>## Warning: package 'lubridate' was built under R version 3.4.4</code></pre>
+<pre class="r"><code>rxOptions(reportProgress = 3) # reduces the amount of output RevoScaleR produces
+options(dplyr.print_max = 200)
+options(dplyr.width = Inf) # shows all columns of a tbl_df object
+
+directory &lt;-  &quot;E:/Documents/PersonalProjects/WsdmKKBox-ChurnPrediction/&quot;
+temp2 &lt;- 20</code></pre>
+</div>
 <div id="data-ingestion" class="section level1">
-<h1><span class="header-section-number">1</span> Data Ingestion</h1>
+<h1><span class="header-section-number">2</span> Data Ingestion</h1>
 <p>Using Machine Learning Server (also known as Microsft R Server) we read in the following files - transactions, members, train and user log data. These files are saved as .xdf file on the disk and not as dataframe since they are huge.</p>
 <p>Few data manipulations were done on the fly - Converting some columns to factor - Converting character to date type</p>
 <pre class="r"><code># transactions.csv ####
@@ -455,6 +481,16 @@ rxGetInfo(trainXdf, getVarInfo = TRUE, numRows = 5)</code></pre>
 ## 3 zLo9f73nGGT1p21ltZC3ChiRnAVvgibMyazbCxvWPcg=        1
 ## 4 8iF/+8HY8lJKFrTc7iR9ZYGCG2Ecrogbc2Vy5YhsfhQ=        1
 ## 5 K6fja4+jmoZ5xG6BypqX80Uw/XKpMgrEMdG2edFOxnA=        1</code></pre>
+</div>
+<div id="eda" class="section level1">
+<h1><span class="header-section-number">3</span> EDA</h1>
+<div id="members-data" class="section level2">
+<h2><span class="header-section-number">3.1</span> Members data</h2>
+<div id="city" class="section level3">
+<h3><span class="header-section-number">3.1.1</span> City</h3>
+<pre class="r"><code># ?rxDataStep</code></pre>
+</div>
+</div>
 </div>
 
 
