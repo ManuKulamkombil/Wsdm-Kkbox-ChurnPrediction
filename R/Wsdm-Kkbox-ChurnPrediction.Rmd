@@ -90,7 +90,7 @@ rxImport(inData = csvPath,
          colClasses = c(city = 'factor',
                         gender = 'factor',
                         registered_via = 'factor'),
-         transforms = list(registration_init_time = as.Date(as.character(registration_init_time), format="%Y%m%d")),
+         # transforms = list(registration_init_time = as.Date(as.character(registration_init_time), format="%Y%m%d")),
          overwrite = TRUE, 
          reportProgress = 3)
 
@@ -182,14 +182,15 @@ rxGetInfo(trainXdf, getVarInfo = TRUE, numRows = 5)
 
 We shall merge members data and train data (labelled data).
 
-```{reval=FALSE, include=TRUE}
+```{r eval=FALSE, include=TRUE}
 churnMembersXdf <- paste0(directory, "Data/Processed/Xdf/churnMembers.xdf")
 
 rxMerge(inData1 = membersXdf,
         inData2 = trainXdf,
         outFile = churnMembersXdf,
         matchVars = "msno",
-        type = "inner")
+        type = "inner",
+        overwrite = TRUE)
 ```
 
 Lets have a glimpse of it,
@@ -321,4 +322,54 @@ loadAndPlot(variable = "genderChurn_donutchart")
 loadAndPlot(variable = "cityChurn_donutchart")
 loadAndPlot(variable = "registered_viaChurn_donutchart")
 ```
+
+
+### Age distribuion of churners
+
+```{r message=FALSE, warning=FALSE}
+rxHistogram(~ F(bd, 10, 100)|is_churn, data = churnMembersXdf)
+```
+
+
+### Pattern of registration of churning members 
+
+```{r, eval=FALSE, include=TRUE}
+
+registChurnData <- rxCube(formula =   ~ F(registration_init_time): is_churn,
+                    data = churnMembersXdf,
+                    returnDataFrame = TRUE,
+                    overwrite = TRUE)
+
+# summary(registChurnData)
+
+registChurnData$F_registration_init_time <- as.Date(as.character(registChurnData$F_registration_init_time), format="%Y%m%d")
+
+levels(registChurnData$is_churn) <- c('Churn', 'Non-churn')
+
+p <- plot_ly(registChurnData, 
+        x = ~F_registration_init_time,
+        y = ~Counts,
+        color = ~is_churn,
+        mode = 'lines',
+        type = 'scatter' )  %>%
+    layout(title = "Distribution of churning subscribers over the registration time",
+           xaxis = list(title = "Registration Date"),
+           yaxis = list(title = "No of Subscribers"))
+
+save(p, 
+     file = paste0(directory, 
+                   "Data/Processed/Rda/Plotly/", 
+                   "churnRegistSubscribers", 
+                   "_Plotly.rda"))
+
+
+```
+
+Visualising it, we get
+
+```{r message=FALSE, warning=FALSE}
+loadAndPlot("churnRegistSubscribers")
+```
+
+
 
