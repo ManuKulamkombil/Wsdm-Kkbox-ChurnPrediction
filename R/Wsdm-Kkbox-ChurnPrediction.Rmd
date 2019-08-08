@@ -3,12 +3,12 @@ title: "WSDM KKBox - Churn Prediction"
 author: "Manu Mathew"
 date: "`r format(Sys.time(), '%d %B, %Y')`"
 output:
-  html_document:
-    toc: true
-    number_sections: true
-    toc_float:
-      collapsed: false
-      smooth_scroll: false
+  rmdformats::readthedown:
+    self_contained: true
+    thumbnails: true
+    lightbox: true
+    gallery: true
+    highlight: tango
     code_folding: hide
 ---
 
@@ -28,7 +28,8 @@ Install_And_Load <- function(packages) {
 
 
 Install_And_Load(c("RevoScaleR", "dplyr", "stringr",
-                   "lubridate", "plotly"))
+                   "lubridate", "plotly",
+                   "rmdformats"))
 
 
 rxOptions(reportProgress = 3) # reduces the amount of output RevoScaleR produces
@@ -280,7 +281,7 @@ churnVar <- varChurnData[varChurnData$is_churn == 1, ]
 nonchurnVar <- varChurnData[varChurnData$is_churn == 0, ]
 
 p <- plot_ly() %>%
-    add_pie(data = varChurnData, labels = ~variable, values = ~count, hole = 0.6,
+    add_pie(data = churnVar, labels = ~variable, values = ~count, hole = 0.6,
             name = "Churn Customers", domain = list(x = c(0, 0.45), y = c(0.2, 0.8))) %>%
     add_pie(data = nonchurnVar, labels = ~variable, values = ~count, hole = 0.6,
             name = "Non-churn Customers", domain = list(x = c(0.55, 1), y = c(0.2, 0.8))) %>%
@@ -319,7 +320,5 @@ lapply(1:3,
 loadAndPlot(variable = "genderChurn_donutchart")
 loadAndPlot(variable = "cityChurn_donutchart")
 loadAndPlot(variable = "registered_viaChurn_donutchart")
-
-
 ```
 
