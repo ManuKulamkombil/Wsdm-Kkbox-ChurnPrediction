@@ -36,7 +36,17 @@ options(dplyr.print_max = 200)
 options(dplyr.width = Inf) # shows all columns of a tbl_df object
 
 directory <-  "E:/Documents/PersonalProjects/WsdmKKBox-ChurnPrediction/"
-temp2 <- 20
+# paste0(directory, 
+#                    "Data/Processed/Rda/Plotly/", 
+#                    "genderChurn_donutchart", 
+#                    "_Plotly.rda"))
+
+# path <- "E:/Documents/POCs/HRanalytics/OrionHRanalytics/"
+loadAndPlot <- function(variable, prefix, suffix = "_Plotly.rda") {
+    ext <- paste0(variable, suffix)
+    load(paste0(directory, "Data/Processed/Rda/Plotly/", ext))
+    p
+}
 
 ```
 
@@ -184,7 +194,7 @@ rxMerge(inData1 = membersXdf,
 Lets have a glimpse of it,
 
 ```{r}
-churnMembersXdf <- paste0(directory, "Data/Processed/Xdf/churnMembers.xdf")
+churnMembersXdf <- RxXdfData(paste0(directory, "Data/Processed/Xdf/churnMembers.xdf"))
 
 rxGetInfo(churnMembersXdf, getVarInfo = TRUE, numRows = 5)
 
@@ -196,23 +206,119 @@ rxSummary(~gender,
 
 ### Gender
 
-```{r}
 
+```{r, eval=FALSE, include=TRUE}
 
-genderChurn <- rxCube(formula = ~ gender + is_churn,
+genderChurnData <- rxCube(formula = ~ gender : is_churn,
                     data = churnMembersXdf,
-                    returnDataFrame = TRUE)
-summary(genderChurn)
-print(genderChurn)
+                    returnDataFrame = TRUE,
+                    overwrite = TRUE)
 
-plotly::plot_ly(genderChurn, 
-        x = ~gender) %>%
-    add_trace(y = ~Counts,
-              color = ~is_churn,
-              # name = 'Absence Rate', 
-              type = 'bar'
-              # mode = 'lines'
-              )
+
+# d <- data.frame(table(watson$Partner, watson$Churn))
+churnGender <- genderChurnData[genderChurnData$is_churn == 1, ]
+nonchurnGender <- genderChurnData[genderChurnData$is_churn == 0, ]
+
+p <- plot_ly() %>%
+    add_pie(data = churnGender, labels = ~gender, values = ~Counts, hole = 0.6,
+            name = "Churn Customers", domain = list(x = c(0, 0.45), y = c(0.2, 0.8))) %>%
+    add_pie(data = nonchurnGender, labels = ~gender, values = ~Counts, hole = 0.6,
+            name = "Non-churn Customers", domain = list(x = c(0.55, 1), y = c(0.2, 0.8))) %>%
+    layout(title = 'Gender distribution in customer attrition',
+           annotations = list( list(text = "Churn customers",
+                                  font = list(size = 11),
+                                  showarrow = FALSE,
+                                  x = .14, y = .5),
+                                  list(text = "Non churn customers",
+                                       font = list(size = 11),
+                                       showarrow = FALSE,
+                                       x = .88, y = .5)),
+           xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+           yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+p
+
+save(p, 
+     file = paste0(directory, 
+                   "Data/Processed/Rda/Plotly/", 
+                   "genderChurn_donutchart", 
+                   "_Plotly.rda"))
+
+```
+
+
+```{r}
+loadAndPlot(variable = "genderChurn_donutchart")
+```
+
+
+
+### Donut charts of Churn wrt Gender, City and registered_via 
+
+
+```{r, eval=FALSE, include=TRUE}
+multiFacVarChurnData <- rxCube(formula =  ~ gender : city : registered_via : is_churn ,
+                    data = churnMembersXdf,
+                    returnDataFrame = TRUE,
+                    overwrite = TRUE)
+
+print(multiFacVarChurnData)
+
+saveDoubleDonutChart <- function(data, varCol, fixCol ) {
+
+# varCol <- 1
+# data <- multiFacVarChurnData
+varName <- colnames(data[varCol])
+
+fixCol <- grep("is_churn", colnames(data))
+varChurnData <- aggregate(x = data$Counts,
+                          by = list(data[[varCol]] , data[[fixCol]]),
+                          FUN = sum)
+colnames(varChurnData) <- c("variable", "is_churn", "count")
+
+churnVar <- varChurnData[varChurnData$is_churn == 1, ]
+nonchurnVar <- varChurnData[varChurnData$is_churn == 0, ]
+
+p <- plot_ly() %>%
+    add_pie(data = varChurnData, labels = ~variable, values = ~count, hole = 0.6,
+            name = "Churn Customers", domain = list(x = c(0, 0.45), y = c(0.2, 0.8))) %>%
+    add_pie(data = nonchurnVar, labels = ~variable, values = ~count, hole = 0.6,
+            name = "Non-churn Customers", domain = list(x = c(0.55, 1), y = c(0.2, 0.8))) %>%
+    layout(title = paste(varName, 'distribution in customer attrition'),
+           annotations = list( list(text = "Churn customers",
+                                  font = list(size = 11),
+                                  showarrow = FALSE,
+                                  x = .14, y = .5),
+                                  list(text = "Non churn customers",
+                                       font = list(size = 11),
+                                       showarrow = FALSE,
+                                       x = .88, y = .5)),
+           xaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE),
+           yaxis = list(showgrid = FALSE, zeroline = FALSE, showticklabels = FALSE))
+
+save(p, 
+     file = paste0(directory, 
+                   "Data/Processed/Rda/Plotly/", 
+                   varName,
+                   "Churn_donutchart", 
+                   "_Plotly.rda"))
+
+}
+
+# saveDoubleDonutChart(data = multiFacVarChurnData,
+#                      varCol = 1)
+
+lapply(1:3, 
+       FUN = function(x) saveDoubleDonutChart(data = multiFacVarChurnData, varCol = x))
+
+
+```
+
+
+```{r}
+loadAndPlot(variable = "genderChurn_donutchart")
+loadAndPlot(variable = "cityChurn_donutchart")
+loadAndPlot(variable = "registered_viaChurn_donutchart")
 
 
 ```
