@@ -70,8 +70,8 @@ rxImport(inData = csvPath,
          colClasses = c(payment_method_id = 'factor',
                         is_auto_renew = 'factor',
                         is_cancel = 'factor'),
-         transforms = list(transaction_date = as.Date(as.character(transaction_date), format="%Y%m%d"),
-                           membership_expire_date = as.Date(as.character(membership_expire_date), format="%Y%m%d")),
+         # transforms = list(transaction_date = as.Date(as.character(transaction_date), format="%Y%m%d"),
+         #                   membership_expire_date = as.Date(as.character(membership_expire_date), format="%Y%m%d")),
          overwrite = TRUE,
          rowsPerRead = 5000000,
          reportProgress = 3)
@@ -356,6 +356,7 @@ p <- plot_ly(registChurnData,
            xaxis = list(title = "Registration Date"),
            yaxis = list(title = "No of Subscribers"))
 
+
 save(p, 
      file = paste0(directory, 
                    "Data/Processed/Rda/Plotly/", 
@@ -369,6 +370,91 @@ Visualising it, we get
 
 ```{r message=FALSE, warning=FALSE}
 loadAndPlot("churnRegistSubscribers")
+```
+
+
+
+
+## Transaction data
+
+### Trasaction pattern - time series
+
+```{r, eval=FALSE, include=TRUE}
+dailyTransAmtPaid <- rxCube(formula = actual_amount_paid ~ F(transaction_date),
+                        data = transactionsXdf,
+                        means = FALSE,
+                        cube = FALSE,
+                        returnDataFrame = TRUE,
+                        overwrite = TRUE)
+
+dailyTransAmtPlan <- rxCube(formula = plan_list_price ~ F(transaction_date),
+                        data = transactionsXdf,
+                        means = FALSE,
+                        cube = FALSE,
+                        returnDataFrame = TRUE,
+                        overwrite = TRUE)
+
+dailyTransAmt <- rxMerge(inData1 = dailyTransAmtPaid,
+        inData2 = dailyTransAmtPlan,
+        matchVars = "F_transaction_date",
+        type = "inner",
+        overwrite = TRUE)
+
+dailyTransAmt$F_transaction_date <- as.Date(as.character(dailyTransAmt$F_transaction_date), format="%Y%m%d")
+
+p <- plot_ly(dailyTransAmt, 
+        x = ~F_transaction_date)  %>%
+    add_trace(y = ~actual_amount_paid, name = 'Actual amount paid', type = 'scatter', mode = 'lines') %>% 
+    add_trace(y = ~plan_list_price, name = 'Planned list price', type = 'scatter', mode = 'lines') %>%
+    layout(title = "Daily Transaction - Actual amount paid vs Plan list price",
+           xaxis = list(title = "Transaction Date"),
+           yaxis = list(title = "Total amount (New Taiwan Dollar)", tickprefix = "$"))
+
+save(p, 
+     file = paste0(directory, 
+                   "Data/Processed/Rda/Plotly/", 
+                   "dailyTransAmt", 
+                   "_Plotly.rda"))
+
+```
+
+```{r message=FALSE, warning=FALSE}
+loadAndPlot("dailyTransAmt")
+```
+
+
+### Pattern of cancelling subscription
+
+```{r, eval=FALSE, include=TRUE}
+isCancel <- rxCube(formula =  N(is_cancel) ~ F(transaction_date),
+                        data = transactionsXdf,
+                        means = FALSE,
+                        cube = FALSE,
+                        returnDataFrame = TRUE,
+                        overwrite = TRUE)
+
+isCancel$F_transaction_date <- as.Date(as.character(isCancel$F_transaction_date), format="%Y%m%d")
+
+p <- plot_ly(isCancel, 
+        x = ~F_transaction_date,
+        y = ~N_is_cancel,
+        # color = ~is_churn,
+        mode = 'lines',
+        type = 'scatter' )  %>%
+    layout(title = "Pattern of cancelling subscription",
+           xaxis = list(title = "Transaction Date"),
+           yaxis = list(title = "No of cancelled subscriptions"))
+
+save(p, 
+     file = paste0(directory, 
+                   "Data/Processed/Rda/Plotly/", 
+                   "dailySubscriptionCancel", 
+                   "_Plotly.rda"))
+
+```
+
+```{r message=FALSE, warning=FALSE}
+loadAndPlot("dailySubscriptionCancel")
 ```
 
 
